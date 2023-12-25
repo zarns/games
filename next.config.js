@@ -3,16 +3,16 @@ const nextConfig = {
   routes() {
     return [
       {
-        source: '/bandit',
-        destination: 'bandit/Bandit',
+        source: '/bandit/Bandit',
+        destination: '/bandit/',
       },
       {
         source: '/battleships',
-        destination: 'battleships/Battleships',
+        destination: '/battleships/',
       },
       {
         source: '/pathfinder',
-        destination: 'pathfinder/Pathfinder',
+        destination: '/pathfinder/',
       },
     ];
   },
