@@ -12,10 +12,9 @@ type Cell = {
 };
 
 class CellUtility {
-  static colorScale = d3
-    .scaleLinear()
-    .domain([1, 50])
-    .range(["rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)"]);
+  static colorScale = d3.scaleSequential<string>((t) => d3
+  .interpolateRgb("rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)")(t))
+    .domain([1, 50]);
 
   static getColorForDistance(distance: number): string {
     switch (distance) {
