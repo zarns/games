@@ -15,7 +15,7 @@ class CellUtility {
   static colorScale = d3
     .scaleLinear()
     .domain([1, 50])
-    .range(["orange", "gray"]);
+    .range(["rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)"]);
 
   static getColorForDistance(distance: number): string {
     switch (distance) {
