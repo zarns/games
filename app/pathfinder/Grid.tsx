@@ -41,12 +41,13 @@ class GridUtility {
   }
 };
 
-const numRows = 20;
+const numRows = 18;
 const numCols = 30;
 const start = [2, 2];
-const end = [17, 27];
+const end = [numRows - 3, numCols - 3];
 
 const Grid = () => {
+  const [refresh, setRefresh] = useState(false);
   const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
   const [grid, setGrid] = useState<Cell[][]>(() => {
     let initialGrid = Array.from({ length: numRows }, () =>
@@ -76,16 +77,22 @@ const Grid = () => {
   });
 
   const handleCellClick = (rowIndex: number, colIndex: number) => {
-    grid[rowIndex][colIndex].isObstacle = true;
-    setGrid(grid);
+    let cell = grid[rowIndex][colIndex];
+    cell.distance = cell.distance === -2 ? -4 : -2;
+    cell.isObstacle = true;
+    setRefresh(!refresh);
   };
 
   const handleResumeAlgorithm = () => {
     console.log('handleResumeAlgorithm');
     setAlgorithmRunning(true);
-    // TODO: resume algorithm
-
-    setAlgorithmRunning(false);
+    grid.map((row, rowIndex) => {
+      row.map((cell, colIndex) => {
+        const newDistance = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
+        if (!cell.isObstacle && !cell.isStart && !cell.isFinish)
+        cell.distance = newDistance;
+      });
+    });
   };
 
   return (
@@ -124,7 +131,7 @@ const Grid = () => {
         )}
       </div>
     </div>
-    <div className="mb-32 grid gap-4 text-center lg:grid-cols-4 lg:text-left">
+    <div className="mb-32 grid gap-4 text-center lg:grid-cols-4 lg:text-left mt-2 mb-2">
       <button
         onClick={handleResumeAlgorithm}
         className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
