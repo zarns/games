@@ -1,14 +1,18 @@
 // app/pathfinder/Grid.tsx
 
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import * as d3 from 'd3';
+import { get } from 'http';
+import Heap from 'heap';
 
 type Cell = {
   distance: number;
   isObstacle: boolean;
   isStart: boolean;
   isFinish: boolean;
+  g: number;
+  rhs: number;
 };
 
 class CellUtility {
@@ -47,33 +51,48 @@ const end = [numRows - 3, numCols - 3];
 
 const Grid = () => {
   const [refresh, setRefresh] = useState(false);
+  const [km, setKm] = useState<number>(0);
   const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
-  const [grid, setGrid] = useState<Cell[][]>(() => {
+  const priorityQueueRef = useRef(new Heap<[number, number]>((a, b) => a[0] - b[0]));
+  const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
+
+  function initializeGrid(): Cell[][] {
     let initialGrid = Array.from({ length: numRows }, () =>
       Array.from({ length: numCols }, () => ({
         distance: 27,
         isObstacle: false,
         isStart: false,
         isFinish: false,
+        g: Infinity,
+        rhs: Infinity,
       }))
     );
 
-    // Set the start cell
-    initialGrid[start[0]][start[1]] = { 
+    initialGrid[start[0]][start[1]] = { // Set the start cell
       ...initialGrid[start[0]][start[1]], 
       distance: -1, 
-      isStart: true 
+      isStart: true, 
+      g: Infinity,
+      rhs: 0,
     };
 
-    // Set the end cell
-    initialGrid[end[0]][end[1]] = { 
+    initialGrid[end[0]][end[1]] = { // Set the end cell
       ...initialGrid[end[0]][end[1]], 
       distance: 0, 
-      isFinish: true 
+      isFinish: true,
+      g: Infinity,
+      rhs: Infinity, 
     };
 
     return initialGrid;
-  });
+  };
+
+  const calculateKey = (rowIndex: number, colIndex: number) => {
+    const curr_cell: Cell = grid[rowIndex][colIndex];
+    const min_g_rhs = Math.min(curr_cell.g, curr_cell.rhs);
+    const h = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
+    return [min_g_rhs + h + km, min_g_rhs];
+  };
 
   const handleCellClick = (rowIndex: number, colIndex: number) => {
     let cell = grid[rowIndex][colIndex];
@@ -87,12 +106,30 @@ const Grid = () => {
     setAlgorithmRunning(true);
     grid.map((row, rowIndex) => {
       row.map((cell, colIndex) => {
+        // implement something
+      });
+    });
+    setAlgorithmRunning(false);
+    setRefresh(!refresh);
+  };
+
+  const handleManhattan = () => {
+    console.log('handleManhattan');
+    setAlgorithmRunning(true);
+    grid.map((row, rowIndex) => {
+      row.map((cell, colIndex) => {
         const newDistance = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
         if (!cell.isObstacle && !cell.isStart && !cell.isFinish)
         cell.distance = newDistance;
       });
     });
+    setAlgorithmRunning(false);
+    setRefresh(!refresh);
   };
+
+  const handleRandomizeObstacles = () => {
+    throw new Error('Function not implemented.');
+  }
 
   return (
   <div>
@@ -130,7 +167,7 @@ const Grid = () => {
         )}
       </div>
     </div>
-    <div className="mb-32 grid gap-4 text-center lg:grid-cols-4 lg:text-left mt-2 mb-2">
+    <div className="grid gap-4 text-center lg:grid-cols-4 lg:text-left mt-2 mb-2">
       <button
         onClick={handleResumeAlgorithm}
         className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
@@ -146,11 +183,11 @@ const Grid = () => {
         </p>
       </button>
       <button
-        onClick={handleResumeAlgorithm} // Replace with appropriate function for each button
+        onClick={handleManhattan} // Replace with appropriate function for each button
         className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
       >
         <h2 className="mb-3 text-2xl font-semibold">
-          Button Label
+          Manhattan Time
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
@@ -160,25 +197,25 @@ const Grid = () => {
         </p>
       </button>
       <button
-        onClick={handleResumeAlgorithm} // Replace with appropriate function for each button
+        onClick={handleResumeAlgorithm}
         className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
       >
         <h2 className="mb-3 text-2xl font-semibold">
-          Button Label {/* Replace with each button's label */}
+          Move forward
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
         </h2>
         <p className="m-0 max-w-[30ch] text-sm opacity-50">
-          Button Description {/* Replace with each button's description */}
+          Button Description
         </p>
       </button>
       <button
-        onClick={handleResumeAlgorithm} // Replace with appropriate function for each button
+        onClick={handleRandomizeObstacles}
         className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
       >
         <h2 className="mb-3 text-2xl font-semibold">
-          Button Label {/* Replace with each button's label */}
+          Randomize Obstacles
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
