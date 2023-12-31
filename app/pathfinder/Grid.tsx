@@ -3,8 +3,7 @@
 'use client'
 import React, { useState, useRef } from 'react';
 import * as d3 from 'd3';
-import { get } from 'http';
-import Heap from 'heap';
+import Heap from 'heap-js';
 
 type Cell = {
   distance: number;
@@ -53,8 +52,16 @@ const Grid = () => {
   const [refresh, setRefresh] = useState(false);
   const [km, setKm] = useState<number>(0);
   const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
-  const priorityQueueRef = useRef(new Heap<[number, number]>((a, b) => a[0] - b[0]));
   const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
+  const priorityQueueRef = useRef<Heap<[number, number]>>(initializeQueue());
+
+  function initializeQueue(): Heap<[number, number]> {
+    return new Heap<[number, number]>((a, b) => {
+      const primaryComparison = a[0] - b[0]; // Compare the first elements of the tuples
+      if (primaryComparison !== 0) return primaryComparison;
+      return a[1] - b[1]; // Compare the second elements of the tuples
+    });
+  };
 
   function initializeGrid(): Cell[][] {
     let initialGrid = Array.from({ length: numRows }, () =>
@@ -93,6 +100,37 @@ const Grid = () => {
     const h = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
     return [min_g_rhs + h + km, min_g_rhs];
   };
+
+  function UpdateVertex(rowIndex: number, colIndex: number) {
+    let cell = grid[rowIndex][colIndex];
+    if (!(rowIndex === end[0] && colIndex === end[1])) {
+      let minRhs = Infinity;
+
+      // Find the minimum rhs value from 'successor' nodes
+      const successors = getSuccessors(rowIndex, colIndex);
+      successors.forEach(([x, y]) => {
+        const successor = grid[x][y];
+        minRhs = Math.min(minRhs, successor.g + 1);
+      });
+      cell.rhs = minRhs;
+    }
+    const cellKey = calculateKey(rowIndex, colIndex);
+    const isInQueue = priorityQueueRef.current.contains([rowIndex, colIndex]);
+
+    if (cell.g !== cell.rhs) {
+      if (isInQueue) {
+        priorityQueueRef.current.update(cellKey, [rowIndex, colIndex]);
+      } else {
+        priorityQueueRef.current.push(cellKey);
+      }
+    } else if (isInQueue) {
+      priorityQueueRef.current.updateItem.remove(cellKey);
+    }
+  }
+
+  function getSuccessors(rowIndex: number, colIndex: number): [number, number][] {
+    return [[1,1]];
+  }
 
   const handleCellClick = (rowIndex: number, colIndex: number) => {
     let cell = grid[rowIndex][colIndex];
