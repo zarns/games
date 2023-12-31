@@ -53,13 +53,13 @@ const Grid = () => {
   const [km, setKm] = useState<number>(0);
   const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
   const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
-  const priorityQueueRef = useRef<Heap<[number, number]>>(initializeQueue());
+  const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
-  function initializeQueue(): Heap<[number, number]> {
-    return new Heap<[number, number]>((a, b) => {
-      const primaryComparison = a[0] - b[0]; // Compare the first elements of the tuples
+  function initializeQueue(): Heap<[[number, number], [number, number]]> {
+    return new Heap<[[number, number], [number, number]]>((a, b) => {
+      const primaryComparison = a[0][0] - b[0][0]; // Compare the primary keys
       if (primaryComparison !== 0) return primaryComparison;
-      return a[1] - b[1]; // Compare the second elements of the tuples
+      return a[0][1] - b[0][1]; // Compare the secondary keys
     });
   };
 
@@ -103,7 +103,13 @@ const Grid = () => {
 
   function UpdateVertex(rowIndex: number, colIndex: number) {
     let cell = grid[rowIndex][colIndex];
-    if (!(rowIndex === end[0] && colIndex === end[1])) {
+    if (!(rowIndex === end[0] && colIndex === end[1])) return;
+    
+    // Find the minimum rhs value from successors
+    cell.rhs = getSuccessors(rowIndex, colIndex).reduce((minRhs, [x, y]) => {
+      const successor = grid[x][y];
+      return Math.min(minRhs, successor.g + 1);
+    }, Infinity);    {
       let minRhs = Infinity;
 
       // Find the minimum rhs value from 'successor' nodes
@@ -115,21 +121,44 @@ const Grid = () => {
       cell.rhs = minRhs;
     }
     const cellKey = calculateKey(rowIndex, colIndex);
-    const isInQueue = priorityQueueRef.current.contains([rowIndex, colIndex]);
-
+    const isInQueue = priorityQueueRef.current.contains([[0, 0], [rowIndex, colIndex]], (element, needle) => {
+      return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
+    });
+    
     if (cell.g !== cell.rhs) {
       if (isInQueue) {
-        priorityQueueRef.current.update(cellKey, [rowIndex, colIndex]);
+        updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
       } else {
-        priorityQueueRef.current.push(cellKey);
+        priorityQueueRef.current.push([[cellKey[0],cellKey[1]], [rowIndex, colIndex]]);
       }
     } else if (isInQueue) {
-      priorityQueueRef.current.updateItem.remove(cellKey);
+      priorityQueueRef.current.remove([[0, 0], [rowIndex, colIndex]], (element, needle) => {
+        return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
+      });
     }
   }
 
+  function updateKeyOfItemInPriorityQueue(newKey: number[], rowIndex: number, colIndex: number) {
+    priorityQueueRef.current.remove([[0, 0], [rowIndex, colIndex]], (element, needle) => {
+      return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
+    });  
+    priorityQueueRef.current.push([[newKey[0],newKey[1]], [rowIndex, colIndex]]);
+  }
+
   function getSuccessors(rowIndex: number, colIndex: number): [number, number][] {
-    return [[1,1]];
+    const successors: [number, number][] = [];
+    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Up, Down, Left, Right
+  
+    directions.forEach(([dx, dy]) => {
+      const newX = rowIndex + dx;
+      const newY = colIndex + dy;
+  
+      if (newX >= 0 && newX < numRows && newY >= 0 && newY < numCols) {
+        successors.push([newX, newY]);
+      }
+    });
+  
+    return successors;
   }
 
   const handleCellClick = (rowIndex: number, colIndex: number) => {
@@ -177,8 +206,7 @@ const Grid = () => {
         flex w-full justify-center 
         border-b border-orange-500 
         bg-gradient-to-b from-zinc-200 
-        pb-6 pt-8 backdrop-blur-2xl 
-        dark:border-neutral-800 dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit 
+        pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit 
         lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30"
     >
       <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 40px)` }}>
