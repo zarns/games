@@ -1,0 +1,44 @@
+/* Pathfinder.css */
+
+.queue-and-grid-container {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  flex-direction: row;
+  width: 100%;
+  overflow-x: auto;
+  justify-content: center;
+}
+
+/* Container for the queue display */
+.queue-display-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.button-container {
+  display: grid;
+  grid-gap: 1rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  text-align: center;
+}
+
+.grid-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  transition: border-color 0.3s, background-color 0.3s;
+
+  &:hover {
+    border-color: #d1d5db72;
+    background-color: #f3f4f609;
+  }
+}

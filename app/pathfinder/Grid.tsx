@@ -4,6 +4,7 @@
 import React, { useState, useRef } from 'react';
 import * as d3 from 'd3';
 import Heap from 'heap-js';
+import './Pathfinder.css';
 
 type Cell = {
   distance: number;
@@ -47,6 +48,7 @@ const numRows = 18;
 const numCols = 30;
 const start = [2, 2];
 const end = [numRows - 3, numCols - 3];
+let current_location = start;
 
 const Grid = () => {
   const [refresh, setRefresh] = useState(false);
@@ -56,11 +58,16 @@ const Grid = () => {
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
   function initializeQueue(): Heap<[[number, number], [number, number]]> {
-    return new Heap<[[number, number], [number, number]]>((a, b) => {
+    const newPriorityQueue = new Heap<[[number, number], [number, number]]>((a, b) => {
       const primaryComparison = a[0][0] - b[0][0]; // Compare the primary keys
       if (primaryComparison !== 0) return primaryComparison;
       return a[0][1] - b[0][1]; // Compare the secondary keys
     });
+    // Calculate the key for the start node
+    const startKey = calculateKey(start[0], start[1]);
+    // Add the start node to the queue
+    newPriorityQueue.push([[startKey[0], startKey[1]], [start[0], start[1]]]);
+    return newPriorityQueue;
   };
 
   function initializeGrid(): Cell[][] {
@@ -94,7 +101,7 @@ const Grid = () => {
     return initialGrid;
   };
 
-  const calculateKey = (rowIndex: number, colIndex: number) => {
+  function calculateKey (rowIndex: number, colIndex: number) {
     const curr_cell: Cell = grid[rowIndex][colIndex];
     const min_g_rhs = Math.min(curr_cell.g, curr_cell.rhs);
     const h = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
@@ -161,7 +168,61 @@ const Grid = () => {
     return successors;
   }
 
+  function computeShortestPath() { // Not finished
+    console.log('computeShortestPath');
+
+    while (shouldContinueUpdating()) {
+      console.log('computeShortestPath');
+      const topElement = priorityQueueRef.current.peek();
+      if (!topElement) throw new Error('Priority queue is empty');
+      const [[primaryKey, secondaryKey], [rowIndex, colIndex]] = topElement;
+      const u = grid[rowIndex][colIndex];
+      const kOld = [primaryKey, secondaryKey];
+      const kNew = calculateKey(rowIndex, colIndex);
+
+      if (kOld < kNew) {
+        UpdateVertex(rowIndex, colIndex);
+      } else if (u.g > u.rhs) {
+        u.g = u.rhs;        
+      } else {
+        u.g = Infinity;
+      }
+      // Update this vertex, and all of its predecessors
+      UpdateVertex(rowIndex, colIndex);
+      getSuccessors(rowIndex, colIndex).forEach(([x, y]) => {
+        UpdateVertex(x, y);
+      });
+    }
+  }
+
+  function shouldContinueUpdating(): boolean {
+    const currentKey = calculateKey(current_location[0], current_location[1]);
+    const topElementInQueue = priorityQueueRef.current.peek();
+    if (!topElementInQueue) throw new Error('Priority queue is empty');
+    const currCell = grid[current_location[0]][current_location[1]];
+    console.log('topElementInQueue:',topElementInQueue[0][0], topElementInQueue[0][1], topElementInQueue[1][0], topElementInQueue[1][1]);
+    console.log('rhs:',currCell.rhs, 'g:', currCell.g, 'currentKey:', currentKey[0])
+    return currCell.rhs > currCell.g || 
+          topElementInQueue[0][0] < currentKey[0] ||
+          (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]);
+  }
+
+  function moveForward(): void {
+    
+    setRefresh(!refresh);
+  }
+
+  function runComputeShortestPath() {
+    setAlgorithmRunning(true);
+    computeShortestPath();
+    setAlgorithmRunning(false);
+    setRefresh(!refresh);
+  }
+
   const handleCellClick = (rowIndex: number, colIndex: number) => {
+    if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
+    if (end[0] === rowIndex && end[1] === colIndex) return;
+
     let cell = grid[rowIndex][colIndex];
     cell.distance = cell.distance === -2 ? -4 : -2;
     cell.isObstacle = true;
@@ -194,92 +255,128 @@ const Grid = () => {
     setRefresh(!refresh);
   };
 
-  const handleRandomizeObstacles = () => {
+  function handleReinitialize() {
+    setGrid(initializeGrid());
+    priorityQueueRef.current = initializeQueue();
+    setRefresh(!refresh);
+  };
+
+  function handleComputeShortestPath() {
+    runComputeShortestPath();
+  };
+
+  function handleMoveForward() {
+    moveForward();
+  };
+
+  function handleRandomizeObstacles() {
     throw new Error('Function not implemented.');
-  }
+  };
+
+  type PriorityQueueDisplayProps = {
+    priorityQueue: Heap<[[number, number], [number, number]]>;
+  };
+
+  const PriorityQueueDisplay = ({ priorityQueue }: PriorityQueueDisplayProps) => {
+    if (!priorityQueue) return <div>No queue data available.</div>;
+  
+    const queueItems = priorityQueue.toArray();
+
+    return (
+      <table>
+        <thead>
+          <tr>
+            <th>KeyA</th>
+            <th>KeyB</th>
+            <th>Row</th>
+            <th>Col</th>
+          </tr>
+        </thead>
+        <tbody>
+          {queueItems.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
+            <tr key={index}>
+              <td>{primaryKey}</td>
+              <td>{secondaryKey}</td>
+              <td>{rowNum}</td>
+              <td>{colNum}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  };
+  
 
   return (
   <div>
-    <div 
-      className="
-        fixed left-0 top-0 
-        flex w-full justify-center 
-        border-b border-orange-500 
-        bg-gradient-to-b from-zinc-200 
-        pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit 
-        lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30"
-    >
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 40px)` }}>
-        {grid.map((row, rowIndex) =>
-          row.map((cell, colIndex) => (
-            <button
-              key={`${rowIndex}-${colIndex}`}
-              style={{
-                width: 40,
-                height: 40,
-                border: '1px solid white',
-                backgroundColor: CellUtility.getColorForDistance(cell.distance),
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '0',
-                cursor: 'pointer',
-              }}
-              onClick={() => handleCellClick(rowIndex, colIndex)}
-            >
-              {cell.distance}
-            </button>
-          ))
-        )}
+    <div className="border-b border-orange-500 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
+      <div className='queue-and-grid-container'>
+        <div className="queue-display-container">
+          <PriorityQueueDisplay priorityQueue={priorityQueueRef.current} />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 40px)` }}>
+          {grid.map((row, rowIndex) =>
+            row.map((cell, colIndex) => (
+              <button
+                key={`${rowIndex}-${colIndex}`}
+                style={{
+                  width: 40,
+                  height: 40,
+                  border: '1px solid white',
+                  backgroundColor: CellUtility.getColorForDistance(cell.distance),
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0',
+                  cursor: 'pointer',
+                }}
+                onClick={() => handleCellClick(rowIndex, colIndex)}
+              >
+                {cell.distance}
+              </button>
+            ))
+          )}
+        </div>
+        <div className="queue-display-container">
+          <PriorityQueueDisplay priorityQueue={priorityQueueRef.current} />
+        </div>
       </div>
     </div>
-    <div className="grid gap-4 text-center lg:grid-cols-4 lg:text-left mt-2 mb-2">
-      <button
-        onClick={handleResumeAlgorithm}
-        className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-      >
+    <div className="button-container">
+      <button onClick={handleReinitialize} className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
-          Resume Algorithm
+          Reinitialize
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
         </h2>
         <p className="m-0 max-w-[30ch] text-sm opacity-50">
-          Resume from current state
+          Reset grid to initial state
         </p>
       </button>
-      <button
-        onClick={handleManhattan} // Replace with appropriate function for each button
-        className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-      >
+      <button onClick={handleComputeShortestPath} className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
-          Manhattan Time
+          ComputeShortestPath
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
         </h2>
         <p className="m-0 max-w-[30ch] text-sm opacity-50">
-          Button Description
+          Explore nodes on priorityQueue
         </p>
       </button>
-      <button
-        onClick={handleResumeAlgorithm}
-        className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-      >
+      <button onClick={handleMoveForward}className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
-          Move forward
+          Move Forward
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
         </h2>
         <p className="m-0 max-w-[30ch] text-sm opacity-50">
-          Button Description
+          One space at a time
         </p>
       </button>
-      <button
-        onClick={handleRandomizeObstacles}
-        className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-      >
+      <button onClick={handleRandomizeObstacles} className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
           Randomize Obstacles
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
@@ -287,7 +384,7 @@ const Grid = () => {
           </span>
         </h2>
         <p className="m-0 max-w-[30ch] text-sm opacity-50">
-          Button Description {/* Replace with each button's description */}
+          Randomly generate obstacles
         </p>
       </button>
     </div>
