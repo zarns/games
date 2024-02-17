@@ -230,6 +230,29 @@ const Grid = () => {
     setRefresh(!refresh);
   };
 
+  const randomizeObstacles = () => {
+    const selectedCells = new Set<string>();
+  
+    while (selectedCells.size < 5) { // Adjusted to 5 for uniqueness
+      const rowIndex = Math.floor(Math.random() * numRows);
+      const colIndex = Math.floor(Math.random() * numCols);
+  
+      const isStart = rowIndex === start[0] && colIndex === start[1];
+      const isEnd = rowIndex === end[0] && colIndex === end[1];
+      const isCurrent = rowIndex === current_location[0] && colIndex === current_location[1];
+  
+      if (!isStart && !isEnd && !isCurrent) {
+        const cellKey = `${rowIndex},${colIndex}`;
+        selectedCells.add(cellKey);
+      }
+    }
+  
+    selectedCells.forEach((cellKey) => {
+      const [rowIndex, colIndex] = cellKey.split(',').map(Number);
+      toggleObstacle(rowIndex, colIndex);
+    });
+  };
+
   const handleMouseDown = (rowIndex: number, colIndex: number) => (event: any) => {
     setIsDragging(true);
     toggleObstacle(rowIndex, colIndex);
@@ -288,9 +311,9 @@ const Grid = () => {
     moveForward();
   };
 
-  function handleRandomizeObstacles() {
-    throw new Error('Function not implemented.');
-  };
+  const handleRandomizeObstacles = () => {
+    randomizeObstacles();
+  };  
 
   type PriorityQueueDisplayProps = {
     priorityQueue: Heap<[[number, number], [number, number]]>;
