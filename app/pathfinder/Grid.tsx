@@ -1,7 +1,7 @@
 // app/pathfinder/Grid.tsx
 
 'use client'
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import Heap from 'heap-js';
 import './Pathfinder.css';
@@ -55,6 +55,7 @@ const Grid = () => {
   const [km, setKm] = useState<number>(0);
   const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
   const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
+  const [isDragging, setIsDragging] = useState(false);
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
   function initializeQueue(): Heap<[[number, number], [number, number]]> {
@@ -229,6 +230,38 @@ const Grid = () => {
     setRefresh(!refresh);
   };
 
+  const toggleObstacle = (rowIndex: number, colIndex: number) => {
+    if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
+    if (end[0] === rowIndex && end[1] === colIndex) return;
+
+    let cell = grid[rowIndex][colIndex];
+    cell.distance = cell.distance === -2 ? -4 : -2;
+    cell.isObstacle = true;
+    setRefresh(!refresh);
+  };
+
+  const handleMouseDown = (rowIndex: number, colIndex: number) => (event: any) => {
+    setIsDragging(true);
+    toggleObstacle(rowIndex, colIndex);
+  };
+  
+  const handleMouseEnter = (rowIndex: number, colIndex: number) => {
+    if (isDragging) {
+      toggleObstacle(rowIndex, colIndex);
+    }
+  };
+  
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+  
+  useEffect(() => {
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);  
+
   const handleResumeAlgorithm = () => {
     console.log('handleResumeAlgorithm');
     setAlgorithmRunning(true);
@@ -319,6 +352,8 @@ const Grid = () => {
             row.map((cell, colIndex) => (
               <button
                 key={`${rowIndex}-${colIndex}`}
+                onMouseDown={handleMouseDown(rowIndex, colIndex)}
+                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                 style={{
                   width: 40,
                   height: 40,
