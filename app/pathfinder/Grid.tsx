@@ -220,16 +220,6 @@ const Grid = () => {
     setRefresh(!refresh);
   }
 
-  const handleCellClick = (rowIndex: number, colIndex: number) => {
-    if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
-    if (end[0] === rowIndex && end[1] === colIndex) return;
-
-    let cell = grid[rowIndex][colIndex];
-    cell.distance = cell.distance === -2 ? -4 : -2;
-    cell.isObstacle = true;
-    setRefresh(!refresh);
-  };
-
   const toggleObstacle = (rowIndex: number, colIndex: number) => {
     if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
     if (end[0] === rowIndex && end[1] === colIndex) return;
@@ -243,24 +233,20 @@ const Grid = () => {
   const handleMouseDown = (rowIndex: number, colIndex: number) => (event: any) => {
     setIsDragging(true);
     toggleObstacle(rowIndex, colIndex);
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
   };
-  
+
   const handleMouseEnter = (rowIndex: number, colIndex: number) => {
     if (isDragging) {
       toggleObstacle(rowIndex, colIndex);
     }
   };
-  
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  useEffect(() => {
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, []);  
 
   const handleResumeAlgorithm = () => {
     console.log('handleResumeAlgorithm');
@@ -365,7 +351,6 @@ const Grid = () => {
                   padding: '0',
                   cursor: 'pointer',
                 }}
-                onClick={() => handleCellClick(rowIndex, colIndex)}
               >
                 {cell.distance}
               </button>
