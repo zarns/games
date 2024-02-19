@@ -209,7 +209,36 @@ const Grid = () => {
   }
 
   function moveForward(): void {
-    
+    console.log('moveForward');
+    const successors = getSuccessors(current_location[0], current_location[1]);
+
+    let minGValue = Infinity;
+    let nextLocation: [number, number] | null = null;
+    console.log('successors:', successors);
+    successors.forEach(([x, y]) => {
+      console.log('x:', x, 'y:', y, 'g:', grid[x][y].g, 'minGValue:', minGValue);
+      if (grid[x][y].g < minGValue) {
+        minGValue = grid[x][y].g;
+        nextLocation = [x, y];
+      }
+    });
+  
+    // Update the current location if a next location is found
+    if (nextLocation) {
+      updateCurrentLocation(nextLocation[0], nextLocation[1]);
+    } else {
+      console.log("No accessible successor found. Cannot move forward.");
+    }
+  }
+
+  function updateCurrentLocation(rowIndex: number, colIndex: number) {
+    console.log(`Moving to next location: (${rowIndex}, ${colIndex})`);
+    let currentCell = grid[current_location[0]][current_location[1]];
+    let nextCell = grid[rowIndex][colIndex];
+    currentCell.isStart = false;
+    // maybe need to update currentCell g value?
+    nextCell.isStart = true;
+    current_location = [rowIndex, colIndex];
     setRefresh(!refresh);
   }
 

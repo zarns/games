@@ -18,7 +18,7 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 
 ## Pseudocode
 
-![pseudocode](./pseudocode_from_likhachev.png)
+![pseudocode](./pseudocode_from_koenig.png)
 
 [Source: D* Lite](https://cdn.aaai.org/AAAI/2002/AAAI02-072.pdf)
 
