@@ -1,21 +1,21 @@
 /* Pathfinder.css */
 
 .queue-and-grid-container {
-  display: grid;
-  grid-template-columns: 1fr 3fr 1fr;
-  flex-direction: row;
+  display: flex;
+  flex-direction: row; /* Ensures children (the grid and queue container) are laid out horizontally */
   width: 100%;
-  overflow-x: auto;
   justify-content: center;
+  align-items: start; /* Aligns children at the start, allowing them to grow independently in height */
 }
 
-/* Container for the queue display */
 .queue-display-container {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto; /* Allows scrolling */
+  max-height: 1050px; /* Example fixed max-height based on viewport height */
 }
-
 .button-container {
   display: grid;
   grid-gap: 1rem;

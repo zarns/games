@@ -11,6 +11,7 @@ type Cell = {
   isObstacle: boolean;
   isStart: boolean;
   isFinish: boolean;
+  isUnknown: boolean;
   g: number;
   rhs: number;
 };
@@ -18,24 +19,32 @@ type Cell = {
 class CellUtility {
   static colorScale = d3.scaleSequential<string>((t) => d3
   .interpolateRgb("rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)")(t))
-    .domain([1, 50]);
+    .domain([1, 10]);
 
-  static getColorForDistance(distance: number): string {
-    switch (distance) {
-      case -4:
-        return 'gray'; // unknown
-      case -3:
-        return 'blue'; // user
-      case -2:
-        return 'black'; // obstacle
-      case -1:
-        return 'green'; // start
-      case 0:
-        return 'red'; // end
-      default:
-        return CellUtility.colorScale(distance) || 'white';
-    }
+  static getColorForCell(cell: Cell): string {
+    if (cell.isStart) return 'green';
+    if (cell.isFinish) return 'red';
+    if (cell.isObstacle) return 'black';
+    if (cell.isUnknown) return 'gray';
+    return CellUtility.colorScale(cell.g % 10);
   }
+
+  // static getColorForDistance(distance: number): string {
+  //   switch (distance) {
+  //     case -4:
+  //       return 'gray'; // unknown
+  //     case -3:
+  //       return 'blue'; // user
+  //     case -2:
+  //       return 'black'; // obstacle
+  //     case -1:
+  //       return 'green'; // start
+  //     case 0:
+  //       return 'red'; // end
+  //     default:
+  //       return CellUtility.colorScale(distance) || 'white';
+  //   }
+  // }
 }
 
 class GridUtility {
@@ -64,10 +73,10 @@ const Grid = () => {
       if (primaryComparison !== 0) return primaryComparison;
       return a[0][1] - b[0][1]; // Compare the secondary keys
     });
-    // Calculate the key for the start node
-    const startKey = calculateKey(start[0], start[1]);
+    // Calculate the key for the goal node
+    const endKey = calculateKey(end[0], end[1]);
     // Add the start node to the queue
-    newPriorityQueue.push([[startKey[0], startKey[1]], [start[0], start[1]]]);
+    newPriorityQueue.push([[endKey[0], endKey[1]], [end[0], end[1]]]);
     return newPriorityQueue;
   };
 
@@ -78,6 +87,7 @@ const Grid = () => {
         isObstacle: false,
         isStart: false,
         isFinish: false,
+        isUnknown: true,
         g: Infinity,
         rhs: Infinity,
       }))
@@ -96,7 +106,7 @@ const Grid = () => {
       distance: 0, 
       isFinish: true,
       g: Infinity,
-      rhs: Infinity, 
+      rhs: 0, 
     };
 
     return initialGrid;
@@ -110,39 +120,42 @@ const Grid = () => {
   };
 
   function UpdateVertex(rowIndex: number, colIndex: number) {
+    console.log('UpdateVertex:', rowIndex, colIndex);
     let cell = grid[rowIndex][colIndex];
-    if (!(rowIndex === end[0] && colIndex === end[1])) return;
-    
-    // Find the minimum rhs value from successors
-    cell.rhs = getSuccessors(rowIndex, colIndex).reduce((minRhs, [x, y]) => {
-      const successor = grid[x][y];
-      return Math.min(minRhs, successor.g + 1);
-    }, Infinity);    {
+    // Calculate the minimum rhs value for all vertices except for the goal
+    if (!(rowIndex === end[0] && colIndex === end[1])) {
       let minRhs = Infinity;
-
-      // Find the minimum rhs value from 'successor' nodes
       const successors = getSuccessors(rowIndex, colIndex);
-      successors.forEach(([x, y]) => {
-        const successor = grid[x][y];
-        minRhs = Math.min(minRhs, successor.g + 1);
+      successors.forEach(([succRow, succCol]) => {
+        const successor = grid[succRow][succCol];
+        minRhs = Math.min(minRhs, successor.g + 1); // Assuming the cost from cell to successor is 1
       });
       cell.rhs = minRhs;
+      cell.isUnknown = false;
     }
     const cellKey = calculateKey(rowIndex, colIndex);
     const isInQueue = priorityQueueRef.current.contains([[0, 0], [rowIndex, colIndex]], (element, needle) => {
       return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
     });
     
+
+    // Update the vertex in the priority queue based on the D* Lite logic
     if (cell.g !== cell.rhs) {
-      if (isInQueue) {
-        updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
+      if (!isInQueue) {
+        // If the cell is not in the queue, insert it
+        priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
+        console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
       } else {
-        priorityQueueRef.current.push([[cellKey[0],cellKey[1]], [rowIndex, colIndex]]);
+        // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
+        updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
       }
-    } else if (isInQueue) {
-      priorityQueueRef.current.remove([[0, 0], [rowIndex, colIndex]], (element, needle) => {
-        return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
-      });
+    } else {
+      if (isInQueue) {
+        // If the cell's g and rhs are equal and it's in the queue, remove it from the queue
+        priorityQueueRef.current.remove([[0, 0], [rowIndex, colIndex]], (element, needle) => {
+          return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
+        });
+      }
     }
   }
 
@@ -161,19 +174,19 @@ const Grid = () => {
       const newX = rowIndex + dx;
       const newY = colIndex + dy;
   
-      if (newX >= 0 && newX < numRows && newY >= 0 && newY < numCols) {
+      // Check bounds and obstacle status
+      if (newX >= 0 && newX < numRows && newY >= 0 && newY < numCols && !grid[newX][newY].isObstacle) {
         successors.push([newX, newY]);
       }
     });
   
     return successors;
-  }
+  }  
 
   function computeShortestPath() { // Not finished
     console.log('computeShortestPath');
 
     while (shouldContinueUpdating()) {
-      console.log('computeShortestPath');
       const topElement = priorityQueueRef.current.peek();
       if (!topElement) throw new Error('Priority queue is empty');
       const [[primaryKey, secondaryKey], [rowIndex, colIndex]] = topElement;
@@ -182,17 +195,16 @@ const Grid = () => {
       const kNew = calculateKey(rowIndex, colIndex);
 
       if (kOld < kNew) {
-        UpdateVertex(rowIndex, colIndex);
+        updateKeyOfItemInPriorityQueue(kNew, rowIndex, colIndex);
       } else if (u.g > u.rhs) {
-        u.g = u.rhs;        
+        u.g = u.rhs;
+        priorityQueueRef.current.pop();
+        getSuccessors(rowIndex, colIndex).forEach(([x, y]) => UpdateVertex(x, y)); // Update successors since u's g-value has decreased.
       } else {
+        let oldG = u.g;
         u.g = Infinity;
+        getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]).forEach(([x, y]) => UpdateVertex(x, y)); // Include u in the update if g is set to Infinity.
       }
-      // Update this vertex, and all of its predecessors
-      UpdateVertex(rowIndex, colIndex);
-      getSuccessors(rowIndex, colIndex).forEach(([x, y]) => {
-        UpdateVertex(x, y);
-      });
     }
   }
 
@@ -203,9 +215,12 @@ const Grid = () => {
     const currCell = grid[current_location[0]][current_location[1]];
     console.log('topElementInQueue:',topElementInQueue[0][0], topElementInQueue[0][1], topElementInQueue[1][0], topElementInQueue[1][1]);
     console.log('rhs:',currCell.rhs, 'g:', currCell.g, 'currentKey:', currentKey[0])
-    return currCell.rhs > currCell.g || 
+    console.log('currentKey', currentKey[0], currentKey[1]);
+    const shouldContinue: boolean = currCell.rhs > currCell.g || 
           topElementInQueue[0][0] < currentKey[0] ||
           (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]);
+    console.log('shouldContinue:', shouldContinue);
+    return shouldContinue;
   }
 
   function moveForward(): void {
@@ -252,12 +267,50 @@ const Grid = () => {
   const toggleObstacle = (rowIndex: number, colIndex: number) => {
     if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
     if (end[0] === rowIndex && end[1] === colIndex) return;
-
+  
     let cell = grid[rowIndex][colIndex];
-    cell.distance = cell.distance === -2 ? -4 : -2;
-    cell.isObstacle = true;
+    if (!cell.isObstacle) {
+      // Making the cell an obstacle
+      cell.isObstacle = true;
+      cell.g = Infinity;
+      cell.rhs = Infinity;
+      const successors = getSuccessors(rowIndex, colIndex);
+      successors.forEach(([x, y]) => placeOnPriorityQueueOrUpdate(x, y));
+    } else {
+      // Reverting the cell from being an obstacle (if needed in your application)
+      cell.isObstacle = false;
+      cell.isUnknown = true;
+      cell.g = Infinity;
+      cell.rhs = RHS_ValueAfterTogglingObstacle(rowIndex, colIndex);
+    }
+    placeOnPriorityQueueOrUpdate(rowIndex, colIndex);
     setRefresh(!refresh);
   };
+
+  function placeOnPriorityQueueOrUpdate(rowIndex: number, colIndex: number) {
+    const cellKey = calculateKey(rowIndex, colIndex);
+    const isInQueue = priorityQueueRef.current.contains([[0, 0], [rowIndex, colIndex]], (element, needle) => {
+      return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
+    });
+    if (!isInQueue) {
+      // If the cell is not in the queue, insert it
+      priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
+      console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
+    } else {
+      // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
+      updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
+    }  
+  }
+
+  function RHS_ValueAfterTogglingObstacle(rowIndex: number, colIndex: number): number {
+    let minRHS = Infinity;
+    getSuccessors(rowIndex, colIndex).forEach(([x, y]) => {
+      const successor = grid[x][y];
+      const cost = 1;
+      minRHS = Math.min(minRHS, successor.g + cost);
+    });
+    return minRHS;
+  }
 
   const randomizeObstacles = () => {
     const selectedCells = new Set<string>();
@@ -350,9 +403,16 @@ const Grid = () => {
 
   const PriorityQueueDisplay = ({ priorityQueue }: PriorityQueueDisplayProps) => {
     if (!priorityQueue) return <div>No queue data available.</div>;
-  
-    const queueItems = priorityQueue.toArray();
+    
+    // Clone the priority queue to ensure the original is not modified.
+    const tempQueue: Heap<[[number, number], [number, number]]> = priorityQueue.clone();
+    const queueItemsInOrder: [[number, number], [number, number]][] = [];
 
+    while (!tempQueue.isEmpty()) {
+      const item = tempQueue.pop() as [[number, number], [number, number]];
+      queueItemsInOrder.push(item);
+    }
+  
     return (
       <table>
         <thead>
@@ -364,7 +424,7 @@ const Grid = () => {
           </tr>
         </thead>
         <tbody>
-          {queueItems.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
+          {queueItemsInOrder.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
             <tr key={index}>
               <td>{primaryKey}</td>
               <td>{secondaryKey}</td>
@@ -382,10 +442,10 @@ const Grid = () => {
   <div>
     <div className="border-b border-orange-500 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
       <div className='queue-and-grid-container'>
-        <div className="queue-display-container">
+        {/* <div className="queue-display-container">
           <PriorityQueueDisplay priorityQueue={priorityQueueRef.current} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 40px)` }}>
+        </div> */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 60px)` }}> {/* Adjusted width for additional info */}
           {grid.map((row, rowIndex) =>
             row.map((cell, colIndex) => (
               <button
@@ -393,18 +453,21 @@ const Grid = () => {
                 onMouseDown={handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: 60,
+                  height: 60,
                   border: '1px solid white',
-                  backgroundColor: CellUtility.getColorForDistance(cell.distance),
+                  backgroundColor: CellUtility.getColorForCell(cell),
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  fontSize: '15px',
                   padding: '0',
                   cursor: 'pointer',
                 }}
               >
-                {cell.distance}
+                <div>G: {cell.g === Infinity ? '∞' : cell.g.toFixed(0)}</div>
+                <div>R: {cell.rhs === Infinity ? '∞' : cell.rhs.toFixed(0)}</div>
               </button>
             ))
           )}
