@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
+import Head from 'next/head'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'D* Lite Algorithm',
-  description: 'Interactive Pathfinding Algorithm Visualizer',
-}
+export const metadata = {
+  title: 'Zarns',
+  description: 'Base Page',
+};
 
 export default function RootLayout({
   children,
@@ -16,6 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <Head>
+        <title>{metadata.title}</title>
+        <meta name="description" content={metadata.description} />
+      </Head>
       <body className={inter.className}>{children}</body>
     </html>
   )

@@ -24,7 +24,7 @@ class CellUtility {
   static getColorForCell(cell: Cell): string {
     if (cell.isStart) return 'green';
     if (cell.isFinish) return 'red';
-    if (cell.isObstacle) return 'black';
+    if (cell.isObstacle) { console.log('isObstacle:'); return 'black';}
     if (cell.isUnknown) return 'gray';
     return CellUtility.colorScale(cell.g % 10);
   }
@@ -93,15 +93,15 @@ const Grid = () => {
       }))
     );
 
-    initialGrid[start[0]][start[1]] = { // Set the start cell
+    initialGrid[start[0]][start[1]] = {
       ...initialGrid[start[0]][start[1]], 
       distance: -1, 
       isStart: true, 
       g: Infinity,
-      rhs: 0,
+      rhs: 99,
     };
 
-    initialGrid[end[0]][end[1]] = { // Set the end cell
+    initialGrid[end[0]][end[1]] = {
       ...initialGrid[end[0]][end[1]], 
       distance: 0, 
       isFinish: true,
@@ -183,7 +183,7 @@ const Grid = () => {
     return successors;
   }  
 
-  function computeShortestPath() { // Not finished
+  function computeShortestPath() {
     console.log('computeShortestPath');
 
     while (shouldContinueUpdating()) {
@@ -203,9 +203,10 @@ const Grid = () => {
       } else {
         let oldG = u.g;
         u.g = Infinity;
-        getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]).forEach(([x, y]) => UpdateVertex(x, y)); // Include u in the update if g is set to Infinity.
+        getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]).forEach(([x, y]) => UpdateVertex(x, y));
       }
     }
+    console.log('shouldContinueUpdating:', shouldContinueUpdating());
   }
 
   function shouldContinueUpdating(): boolean {
@@ -265,6 +266,7 @@ const Grid = () => {
   }
 
   const toggleObstacle = (rowIndex: number, colIndex: number) => {
+    console.warn("toggleObstacle")
     if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
     if (end[0] === rowIndex && end[1] === colIndex) return;
   
