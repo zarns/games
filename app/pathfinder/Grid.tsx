@@ -5,53 +5,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import Heap from 'heap-js';
 import './Pathfinder.css';
-
-type Cell = {
-  distance: number;
-  isObstacle: boolean;
-  isStart: boolean;
-  isFinish: boolean;
-  isUnknown: boolean;
-  g: number;
-  rhs: number;
-};
-
-class CellUtility {
-  static colorScale = d3.scaleSequential<string>((t) => d3
-  .interpolateRgb("rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)")(t))
-    .domain([1, 10]);
-
-  static getColorForCell(cell: Cell): string {
-    if (cell.isStart) return 'green';
-    if (cell.isFinish) return 'red';
-    if (cell.isObstacle) { console.log('isObstacle:'); return 'black';}
-    if (cell.isUnknown) return 'gray';
-    return CellUtility.colorScale(cell.g % 10);
-  }
-
-  // static getColorForDistance(distance: number): string {
-  //   switch (distance) {
-  //     case -4:
-  //       return 'gray'; // unknown
-  //     case -3:
-  //       return 'blue'; // user
-  //     case -2:
-  //       return 'black'; // obstacle
-  //     case -1:
-  //       return 'green'; // start
-  //     case 0:
-  //       return 'red'; // end
-  //     default:
-  //       return CellUtility.colorScale(distance) || 'white';
-  //   }
-  // }
-}
-
-class GridUtility {
-  static getManhattanDistance(x1: number, y1: number, x2: number, y2: number) {
-    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
-  }
-};
+import Legend from './Legend';
+import { Cell, CellUtility, GridUtility } from './Types';
 
 const numRows = 18;
 const numCols = 30;
@@ -98,7 +53,7 @@ const Grid = () => {
       distance: -1, 
       isStart: true, 
       g: Infinity,
-      rhs: 99,
+      rhs: Infinity,
     };
 
     initialGrid[end[0]][end[1]] = {
@@ -454,6 +409,35 @@ const Grid = () => {
         {/* <div className="queue-display-container">
           <PriorityQueueDisplay priorityQueue={priorityQueueRef.current} />
         </div> */}
+        {/* // Adjust the grid container style
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 1fr)`, maxWidth: '100vw' }}> 
+          {grid.map((row, rowIndex) =>
+            row.map((cell, colIndex) => (
+              <button
+                key={`${rowIndex}-${colIndex}`}
+                onMouseDown={handleMouseDown(rowIndex, colIndex)}
+                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                style={{
+                  width: '2vw', // Adjusted to scale with viewport width
+                  height: '2vw', // Adjusted to maintain aspect ratio
+                  border: '1px solid white',
+                  backgroundColor: CellUtility.getColorForCell(cell),
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1vw', // Adjusted to scale with viewport width
+                  padding: '0',
+                  cursor: 'pointer',
+                }}
+              >
+                <div>G: {cell.g === Infinity ? '∞' : cell.g.toFixed(0)}</div>
+                <div>R: {cell.rhs === Infinity ? '∞' : cell.rhs.toFixed(0)}</div>
+              </button>
+            ))
+          )}
+        </div> */}
+
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 60px)` }}> {/* Adjusted width for additional info */}
           {grid.map((row, rowIndex) =>
             row.map((cell, colIndex) => (
@@ -532,6 +516,7 @@ const Grid = () => {
         </p>
       </button>
     </div>
+    <Legend />
   </div>
   );
 };
