@@ -31,3 +31,7 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/deploym
 ### Reminder to self
 
 [Favicons](https://icons8.com/icons/set/game--author-kiranshastry)
+
+- add legend with color explanation
+- add instructions?
+- 

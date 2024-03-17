@@ -226,6 +226,12 @@ const Grid = () => {
 
   function moveForward(): void {
     console.log('moveForward');
+
+    if (current_location[0] === end[0] && current_location[1] === end[1]) {
+      console.log('Already at the goal.');
+      return;
+    }
+
     const successors = getSuccessors(current_location[0], current_location[1]);
 
     let minGValue = Infinity;
@@ -384,6 +390,7 @@ const Grid = () => {
   function handleReinitialize() {
     setGrid(initializeGrid());
     priorityQueueRef.current = initializeQueue();
+    current_location = start;
     setRefresh(!refresh);
   };
 
