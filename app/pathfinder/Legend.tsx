@@ -1,37 +1,64 @@
 // Legend.tsx
 import React from 'react';
-import { Cell, CellUtility, GridUtility } from './Types';
+import { CellUtility } from './Types';
 
-type LegendProps = {
-  data: { color: string; label: string }[];
-};
+const Legend = () => {
+  const staticLegendData = [
+    { color: 'green', label: 'Current' },
+    { color: 'red', label: 'Goal' },
+    { color: 'black', label: 'Obstacle' },
+    { color: 'gray', label: 'Unknown' },
+  ];
 
-const legendData = [
-  { color: 'green', label: 'Start' },
-  { color: 'red', label: 'Finish' },
-  { color: 'black', label: 'Obstacle' },
-  { color: 'gray', label: 'Unknown' },
-  { color: CellUtility.colorScale(0),  label: 'Path' },
-];
-
-const Grid: React.FC = () => {
+  const pathLegendData = Array.from({ length: 4 }, (_, i) => ({
+    color: CellUtility.colorScale(i * 3),
+    label: i === 0 ? "Lower G Value" : i === 3 ? "Higher G Value" : "",
+    invisibleLabel: i !== 0 && i !== 3 ? "G" : "",
+  }));
 
   return (
-    <div>
-      <Legend />
-    </div>
-  );
-};
-
-const Legend: React.FC = () => {
-  return (
-    <div className="border-b border-orange-500 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-      {legendData.map((item, index) => (
-        <div key={index} className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
-          <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px' }}></div>
-          <span>{item.label}</span>
+    <div className="legend-container" style={{
+      background: 'linear-gradient(to right, #6a11cb 0%, #2575fc 100%)', // Example gradient from purple to blue
+      borderRadius: '10px',
+      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+      padding: '20px',
+      margin: '20px',
+      color: 'white', // Adjust text color for better readability on gradient background
+    }}>
+      <div className="legend-full-container" style={{ display: 'flex', justifyContent: 'space-between' }}>
+        {/* Legend section */}
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: '20px' }}>
+          {/* Static Legend */}
+          <div className="static-legend" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+            {staticLegendData.map((item, index) => (
+              <div key={index} className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px', border: '1px solid #fff', borderRadius: '50%' }}></div>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+          {/* Path Legend */}
+          <div className="path-legend" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '10px' }}>
+            {pathLegendData.map((item, index) => (
+              <div key={index} className="legend-item" style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px', border: '1px solid #fff', borderRadius: '50%' }}></div>
+                <span>{item.label}</span>
+                <span style={{ visibility: 'hidden' }}>{item.invisibleLabel}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+        {/* Instructions & Links section */}
+        <div style={{ width: '50%', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <h2>Instructions & Resources</h2>
+          <p>This visualization helps you understand how the pathfinding algorithm works.</p>
+          <ul>
+            <li>For more details, check the <a href="https://link-to-original-paper" target="_blank" rel="noopener noreferrer" style={{ color: '#aff'}}>original paper</a>.</li>
+            <li>Explore more of my projects on <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer" style={{ color: '#aff'}}>GitHub</a>.</li>
+            <li>Visit my <a href="https://yourportfolio.com" target="_blank" rel="noopener noreferrer" style={{ color: '#aff'}}>portfolio</a> for a comprehensive overview of my work.</li>
+          </ul>
+        </div>
+      </div>
     </div>
   );
 };

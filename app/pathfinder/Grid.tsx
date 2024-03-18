@@ -378,29 +378,35 @@ const Grid = () => {
     }
   
     return (
-      <table>
-        <thead>
-          <tr>
-            <th>KeyA</th>
-            <th>KeyB</th>
-            <th>Row</th>
-            <th>Col</th>
-          </tr>
-        </thead>
-        <tbody>
-          {queueItemsInOrder.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
-            <tr key={index}>
-              <td>{primaryKey}</td>
-              <td>{secondaryKey}</td>
-              <td>{rowNum}</td>
-              <td>{colNum}</td>
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'center' }}>KeyA</th>
+              <th style={{ textAlign: 'center' }}>KeyB</th>
+              <th style={{ textAlign: 'center' }}>Row</th>
+              <th style={{ textAlign: 'center' }}>Col</th>
+              <th></th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+        </table>
+      <div className="scrollable-body">
+        <table>
+          <tbody>
+            {queueItemsInOrder.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
+              <tr key={index}>
+                <td style={{ textAlign: 'center' }}>{primaryKey}</td>
+                <td style={{ textAlign: 'center' }}>{secondaryKey}</td>
+                <td style={{ textAlign: 'center' }}>{rowNum}</td>
+                <td style={{ textAlign: 'center' }}>{colNum}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
     );
   };
-  
 
   return (
   <div>

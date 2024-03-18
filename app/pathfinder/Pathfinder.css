@@ -12,10 +12,34 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 1rem;
-  overflow-y: auto; /* Allows scrolling */
-  max-height: 1050px; /* Example fixed max-height based on viewport height */
+  padding-left: 1rem;
+  max-height: 1080px;
+  width: 300px;
 }
+
+.queue-display-container table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.queue-display-container th, 
+.queue-display-container td {
+  width: 75px;
+  padding: 3px;
+  text-align: left;
+}
+
+.scrollable-body {
+  overflow-y: scroll;
+  max-height: 1050px;
+}
+
+.queue-display-container thead tr th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
 .button-container {
   display: grid;
   grid-gap: 1rem;
