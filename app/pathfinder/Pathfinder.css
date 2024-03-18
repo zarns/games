@@ -2,10 +2,10 @@
 
 .queue-and-grid-container {
   display: flex;
-  flex-direction: row; /* Ensures children (the grid and queue container) are laid out horizontally */
+  flex-direction: row;
   width: 100%;
   justify-content: center;
-  align-items: start; /* Aligns children at the start, allowing them to grow independently in height */
+  align-items: start;
 }
 
 .queue-display-container {

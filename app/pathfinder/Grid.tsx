@@ -412,38 +412,6 @@ const Grid = () => {
   <div>
     <div className="border-b border-orange-500 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
       <div className='queue-and-grid-container'>
-        {/* <div className="queue-display-container">
-          <PriorityQueueDisplay priorityQueue={priorityQueueRef.current} />
-        </div> */}
-        {/* // Adjust the grid container style
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 1fr)`, maxWidth: '100vw' }}> 
-          {grid.map((row, rowIndex) =>
-            row.map((cell, colIndex) => (
-              <button
-                key={`${rowIndex}-${colIndex}`}
-                onMouseDown={handleMouseDown(rowIndex, colIndex)}
-                onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
-                style={{
-                  width: '2vw', // Adjusted to scale with viewport width
-                  height: '2vw', // Adjusted to maintain aspect ratio
-                  border: '1px solid white',
-                  backgroundColor: CellUtility.getColorForCell(cell),
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1vw', // Adjusted to scale with viewport width
-                  padding: '0',
-                  cursor: 'pointer',
-                }}
-              >
-                <div>G: {cell.g === Infinity ? '∞' : cell.g.toFixed(0)}</div>
-                <div>R: {cell.rhs === Infinity ? '∞' : cell.rhs.toFixed(0)}</div>
-              </button>
-            ))
-          )}
-        </div> */}
-
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 60px)` }}> {/* Adjusted width for additional info */}
           {grid.map((row, rowIndex) =>
             row.map((cell, colIndex) => (
