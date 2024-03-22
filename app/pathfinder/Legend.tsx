@@ -12,7 +12,7 @@ const Legend = () => {
 
   const pathLegendData = Array.from({ length: 4 }, (_, i) => ({
     color: CellUtility.colorScale(i * 3),
-    label: i === 0 ? 'Lower G Value' : i === 3 ? 'Higher G Value' : ' s',
+    label: i === 0 ? 'Lower G Value' : i === 3 ? 'Higher G Value' : "",
     invisibleLabel: i !== 0 && i !== 3 ? "G" : "",
   }));
 
@@ -43,6 +43,7 @@ const Legend = () => {
               <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px', borderRadius: '50%' }}></div>
                 <span>{item.label}</span>
+                <span style={{ visibility: 'hidden' }}>{item.invisibleLabel}</span>
               </div>
             ))}
           </div>
