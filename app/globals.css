@@ -25,3 +25,8 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+html {
+  transform: scale(0.5);
+  transform-origin: top;
+}
