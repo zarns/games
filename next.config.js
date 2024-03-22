@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  routes() {
+  async rewrites() {
     return [
       {
         source: '/bandit/Bandit',
