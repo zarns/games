@@ -56,6 +56,7 @@ const Legend = () => {
             <li>Click or drag on the grid to add/remove obstacles.</li>
             <li>Use the "Move Forward" button to advance.</li>
             <li>Block a path and recompute to see the algorithm adapt.</li>
+            <li>Click "Reinitialize" to clear the grid and start over.</li>
           </ul>
         </div>
 
