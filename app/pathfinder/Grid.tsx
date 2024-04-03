@@ -15,12 +15,19 @@ const end = [numRows - 3, numCols - 3];
 let current_location = start;
 
 const Grid = () => {
-  const [refresh, setRefresh] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
   const [km, setKm] = useState<number>(0);
-  const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
+  // const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
+  const isAlgorithmRunningRef = useRef<boolean>(false);
   const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
   const [isDragging, setIsDragging] = useState(false);
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
+
+  // var algorithmRunning = false;
+
+  // function setAlgorithmRunning(value: boolean) {
+  //   algorithmRunning = value;
+  // };
 
   function initializeQueue(): Heap<[[number, number], [number, number]]> {
     const newPriorityQueue = new Heap<[[number, number], [number, number]]>((a, b) => {
@@ -74,8 +81,8 @@ const Grid = () => {
     return [min_g_rhs + h + km, min_g_rhs];
   };
 
-  function UpdateVertex(rowIndex: number, colIndex: number) {
-    console.log('UpdateVertex:', rowIndex, colIndex);
+  async function UpdateVertex(rowIndex: number, colIndex: number) {
+    // console.log('UpdateVertex:', rowIndex, colIndex);
     let cell = grid[rowIndex][colIndex];
     // Calculate the minimum rhs value for all vertices except for the goal
     if (!(rowIndex === end[0] && colIndex === end[1])) {
@@ -85,7 +92,7 @@ const Grid = () => {
         const successor = grid[succRow][succCol];
         minRhs = Math.min(minRhs, successor.g + 1); // Assuming the cost from cell to successor is 1
       });
-      cell.rhs = minRhs;
+      await updateGAndRhsValues(rowIndex, colIndex, cell.g, minRhs);
       cell.isUnknown = false;
     }
     const cellKey = calculateKey(rowIndex, colIndex);
@@ -99,7 +106,7 @@ const Grid = () => {
       if (!isInQueue) {
         // If the cell is not in the queue, insert it
         priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
-        console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
+        // console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
       } else {
         // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
         updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
@@ -138,44 +145,51 @@ const Grid = () => {
     return successors;
   }  
 
-  function computeShortestPath() {
-    console.log('computeShortestPath');
-
+  async function computeShortestPath() {
     while (shouldContinueUpdating()) {
       const topElement = priorityQueueRef.current.peek();
       if (!topElement) throw new Error('Priority queue is empty');
       const [[primaryKey, secondaryKey], [rowIndex, colIndex]] = topElement;
-      const u = grid[rowIndex][colIndex];
+      const cell = grid[rowIndex][colIndex];
       const kOld = [primaryKey, secondaryKey];
       const kNew = calculateKey(rowIndex, colIndex);
-
+  
       if (kOld < kNew) {
         updateKeyOfItemInPriorityQueue(kNew, rowIndex, colIndex);
-      } else if (u.g > u.rhs) {
-        u.g = u.rhs;
+      } else if (cell.g > cell.rhs) {
+        await updateGAndRhsValues(rowIndex, colIndex, cell.rhs, cell.rhs);
         priorityQueueRef.current.pop();
-        getSuccessors(rowIndex, colIndex).forEach(([x, y]) => UpdateVertex(x, y)); // Update successors since u's g-value has decreased.
+        const successors = getSuccessors(rowIndex, colIndex);
+        for (const [x, y] of successors) {
+          await UpdateVertex(x, y);
+        }
       } else {
-        let oldG = u.g;
-        u.g = Infinity;
-        getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]).forEach(([x, y]) => UpdateVertex(x, y));
+        await updateGAndRhsValues(rowIndex, colIndex, Infinity, cell.rhs);
+        const allNodes = getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]);
+        for (const [x, y] of allNodes) {
+          await UpdateVertex(x, y);
+        }
       }
     }
-    console.log('shouldContinueUpdating:', shouldContinueUpdating());
   }
+  
 
   function shouldContinueUpdating(): boolean {
+    // console.log(isAlgorithmRunningRef.current.valueOf());
+    if (!isAlgorithmRunningRef.current) {
+      return false;
+    }
     const currentKey = calculateKey(current_location[0], current_location[1]);
     const topElementInQueue = priorityQueueRef.current.peek();
     if (!topElementInQueue) throw new Error('Priority queue is empty');
     const currCell = grid[current_location[0]][current_location[1]];
-    console.log('topElementInQueue:',topElementInQueue[0][0], topElementInQueue[0][1], topElementInQueue[1][0], topElementInQueue[1][1]);
-    console.log('rhs:',currCell.rhs, 'g:', currCell.g, 'currentKey:', currentKey[0])
-    console.log('currentKey', currentKey[0], currentKey[1]);
+    // console.log('topElementInQueue:',topElementInQueue[0][0], topElementInQueue[0][1], topElementInQueue[1][0], topElementInQueue[1][1]);
+    // console.log('rhs:',currCell.rhs, 'g:', currCell.g, 'currentKey:', currentKey[0])
+    // console.log('currentKey', currentKey[0], currentKey[1]);
     const shouldContinue: boolean = currCell.rhs > currCell.g || 
           topElementInQueue[0][0] < currentKey[0] ||
           (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]);
-    console.log('shouldContinue:', shouldContinue);
+    // console.log('shouldContinue:', shouldContinue);
     return shouldContinue;
   }
 
@@ -191,9 +205,9 @@ const Grid = () => {
 
     let minGValue = Infinity;
     let nextLocation: [number, number] | null = null;
-    console.log('successors:', successors);
+    // console.log('successors:', successors);
     successors.forEach(([x, y]) => {
-      console.log('x:', x, 'y:', y, 'g:', grid[x][y].g, 'minGValue:', minGValue);
+      // console.log('x:', x, 'y:', y, 'g:', grid[x][y].g, 'minGValue:', minGValue);
       if (grid[x][y].g < minGValue) {
         minGValue = grid[x][y].g;
         nextLocation = [x, y];
@@ -213,23 +227,58 @@ const Grid = () => {
     let currentCell = grid[current_location[0]][current_location[1]];
     let nextCell = grid[rowIndex][colIndex];
     currentCell.isStart = false;
-    // maybe need to update currentCell g value?
     nextCell.isStart = true;
     current_location = [rowIndex, colIndex];
-    setRefresh(!refresh);
+    setRefreshCount(prev => prev + 1);
   }
 
-  function runComputeShortestPath() {
-    setAlgorithmRunning(true);
-    computeShortestPath();
-    setAlgorithmRunning(false);
-    setRefresh(!refresh);
+  async function runComputeShortestPath() {
+    console.log('runComputeShortestPath', isAlgorithmRunningRef.current.valueOf());
+    isAlgorithmRunningRef.current = !isAlgorithmRunningRef.current;
+    // setAlgorithmRunning((prev: boolean) => !prev);
+    if (isAlgorithmRunningRef.current) {
+      console.log('Starting ComputeShortestPath');
+      await computeShortestPath();
+      // setAlgorithmRunning(false);
+      isAlgorithmRunningRef.current = false;
+      setRefreshCount(prev => prev + 1);  
+    } else {
+      console.log('Stopping ComputeShortestPath.');
+    }
+  }
+
+  // useEffect(() => {
+  //   async function handlePathfinding() {
+  //     if (isAlgorithmRunningRef.current) {
+  //       console.log('Starting ComputeShortestPath');
+  //       await computeShortestPath();
+  //       // setAlgorithmRunning(false);
+  //       isAlgorithmRunningRef.current = false;
+  //       setRefreshCount(prev => prev + 1);  
+  //     } else {
+  //       console.log('Stopping ComputeShortestPath.');
+  //     }
+  //   }
+  //   handlePathfinding();
+  // }, [algorithmRunning]);
+  
+  async function updateGAndRhsValues(rowIndex: number, colIndex: number, newG: number, newRhs: number) {
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    grid[rowIndex][colIndex].g = newG;
+    grid[rowIndex][colIndex].rhs = newRhs;
+
+    await delay(1);
+    setRefreshCount(prev => prev + 1);
+    // await delay(1);
+    return;
   }
 
   const toggleObstacle = (rowIndex: number, colIndex: number) => {
-    console.warn("toggleObstacle")
+    console.log("toggleObstacle")
     if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
     if (end[0] === rowIndex && end[1] === colIndex) return;
+
+    setKm(km + 1);
   
     let cell = grid[rowIndex][colIndex];
     if (!cell.isObstacle) {
@@ -247,7 +296,7 @@ const Grid = () => {
       cell.rhs = RHS_ValueAfterTogglingObstacle(rowIndex, colIndex);
     }
     placeOnPriorityQueueOrUpdate(rowIndex, colIndex);
-    setRefresh(!refresh);
+    setRefreshCount(prev => prev + 1);
   };
 
   function placeOnPriorityQueueOrUpdate(rowIndex: number, colIndex: number) {
@@ -258,7 +307,7 @@ const Grid = () => {
     if (!isInQueue) {
       // If the cell is not in the queue, insert it
       priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
-      console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
+      // console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
     } else {
       // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
       updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
@@ -316,37 +365,13 @@ const Grid = () => {
     }
   };
 
-  const handleResumeAlgorithm = () => {
-    console.log('handleResumeAlgorithm');
-    setAlgorithmRunning(true);
-    grid.map((row, rowIndex) => {
-      row.map((cell, colIndex) => {
-        // implement something
-      });
-    });
-    setAlgorithmRunning(false);
-    setRefresh(!refresh);
-  };
-
-  const handleManhattan = () => {
-    console.log('handleManhattan');
-    setAlgorithmRunning(true);
-    grid.map((row, rowIndex) => {
-      row.map((cell, colIndex) => {
-        const newDistance = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
-        if (!cell.isObstacle && !cell.isStart && !cell.isFinish)
-        cell.distance = newDistance;
-      });
-    });
-    setAlgorithmRunning(false);
-    setRefresh(!refresh);
-  };
-
   function handleReinitialize() {
+    // setAlgorithmRunning(false);
+    isAlgorithmRunningRef.current = false;
     setGrid(initializeGrid());
     priorityQueueRef.current = initializeQueue();
     current_location = start;
-    setRefresh(!refresh);
+    setRefreshCount(0);
   };
 
   function handleComputeShortestPath() {
