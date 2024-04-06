@@ -14,15 +14,15 @@ export type Cell = {
 export class CellUtility {
   static colorScale = d3.scaleSequential<string>((t) => 
     d3.interpolateRgb("rgba(255, 165, 0, .9)", "rgba(128, 0, 13, .9)")(t))
-      .domain([1, 10]);
+      .domain([1, 30]);
 
   static getColorForCell(cell: Cell): string {
     if (cell.isStart) return 'green';
     if (cell.isFinish) return 'red';
     if (cell.isObstacle) return 'black';
     if (cell.isUnknown) return 'gray';
-    if (cell.g === Infinity) return CellUtility.colorScale(13);
-    return CellUtility.colorScale(cell.g % 10);
+    if (cell.g === Infinity) return CellUtility.colorScale(29);
+    return CellUtility.colorScale(cell.g % 25);
   }
 }
 

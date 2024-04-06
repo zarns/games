@@ -266,7 +266,7 @@ const Grid = () => {
     grid[rowIndex][colIndex].g = newG;
     grid[rowIndex][colIndex].rhs = newRhs;
 
-    await delay(100);
+    await delay(1);
     setRefreshCount(prev => prev + 1);
     // await delay(1);
     return;
@@ -365,6 +365,30 @@ const Grid = () => {
     }
   };
 
+  const handleTouchStart = (rowIndex: number, colIndex: number) => (event: any) => {
+    event.preventDefault();
+    setIsDragging(true);
+    toggleObstacle(rowIndex, colIndex);
+  };
+
+  const handleTouchMove = (event: any) => {
+    if (!isDragging) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    const gridElement = event.currentTarget.parentNode;
+    const rect = gridElement.getBoundingClientRect();
+    const rowIndex = Math.floor((touch.clientY - rect.top) / (rect.height / numRows));
+    const colIndex = Math.floor((touch.clientX - rect.left) / (rect.width / numCols));
+    if (rowIndex >= 0 && rowIndex < numRows && colIndex >= 0 && colIndex < numCols) {
+      toggleObstacle(rowIndex, colIndex); // Toggle cells as the touch moves
+    }
+  };
+  
+  const handleTouchEnd = () => {
+    setIsDragging(false); // Reset dragging state when touch ends
+  };
+  
+
   function handleReinitialize() {
     // setAlgorithmRunning(false);
     isAlgorithmRunningRef.current = false;
@@ -444,6 +468,9 @@ const Grid = () => {
                 key={`${rowIndex}-${colIndex}`}
                 onMouseDown={handleMouseDown(rowIndex, colIndex)}
                 onMouseEnter={() => handleMouseEnter(rowIndex, colIndex)}
+                onTouchStart={handleTouchStart(rowIndex, colIndex)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
                 style={{
                   width: 60,
                   height: 60,
