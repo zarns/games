@@ -6,6 +6,7 @@
   width: 100%;
   justify-content: center;
   align-items: start;
+  touch-action: none;
 }
 
 .queue-display-container {

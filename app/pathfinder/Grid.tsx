@@ -437,7 +437,7 @@ const Grid = () => {
   <div>
     <div className="border-b border-orange-500 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-orange-500 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto lg:rounded-xl lg:border lg:border-orange-500 lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
       <div className='queue-and-grid-container'>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 60px)` }}> {/* Adjusted width for additional info */}
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, 60px)` }}>
           {grid.map((row, rowIndex) =>
             row.map((cell, colIndex) => (
               <button
