@@ -82,7 +82,6 @@ const Grid = () => {
   };
 
   async function UpdateVertex(rowIndex: number, colIndex: number) {
-    // console.log('UpdateVertex:', rowIndex, colIndex);
     let cell = grid[rowIndex][colIndex];
     // Calculate the minimum rhs value for all vertices except for the goal
     if (!(rowIndex === end[0] && colIndex === end[1])) {
@@ -267,7 +266,7 @@ const Grid = () => {
     grid[rowIndex][colIndex].g = newG;
     grid[rowIndex][colIndex].rhs = newRhs;
 
-    await delay(1);
+    await delay(100);
     setRefreshCount(prev => prev + 1);
     // await delay(1);
     return;
@@ -327,7 +326,7 @@ const Grid = () => {
   const randomizeObstacles = () => {
     const selectedCells = new Set<string>();
   
-    while (selectedCells.size < 5) { // Adjusted to 5 for uniqueness
+    while (selectedCells.size < 50) {
       const rowIndex = Math.floor(Math.random() * numRows);
       const colIndex = Math.floor(Math.random() * numCols);
   
@@ -348,6 +347,7 @@ const Grid = () => {
   };
 
   const handleMouseDown = (rowIndex: number, colIndex: number) => (event: any) => {
+    event.preventDefault();
     setIsDragging(true);
     toggleObstacle(rowIndex, colIndex);
 
