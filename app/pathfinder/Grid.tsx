@@ -371,6 +371,8 @@ const Grid = () => {
     toggleObstacle(rowIndex, colIndex);
   };
 
+  let lastToggledCell: { rowIndex: number, colIndex: number } | null = null;
+
   const handleTouchMove = (event: any) => {
     if (!isDragging) return;
     event.preventDefault();
@@ -380,7 +382,10 @@ const Grid = () => {
     const rowIndex = Math.floor((touch.clientY - rect.top) / (rect.height / numRows));
     const colIndex = Math.floor((touch.clientX - rect.left) / (rect.width / numCols));
     if (rowIndex >= 0 && rowIndex < numRows && colIndex >= 0 && colIndex < numCols) {
-      toggleObstacle(rowIndex, colIndex); // Toggle cells as the touch moves
+      if (!lastToggledCell || rowIndex !== lastToggledCell.rowIndex || colIndex !== lastToggledCell.colIndex) {
+        toggleObstacle(rowIndex, colIndex); // Toggle cells as the touch moves
+        lastToggledCell = { rowIndex, colIndex };
+      }
     }
   };
   
