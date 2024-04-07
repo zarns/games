@@ -2,27 +2,39 @@
 
 'use client'
 import React, { useState, useRef, useEffect } from 'react';
-import * as d3 from 'd3';
 import Heap from 'heap-js';
 import './Pathfinder.css';
 import Legend from './Legend';
 import { Cell, CellUtility, GridUtility } from './Types';
 
-const numRows = 18;
-const numCols = 30;
-const start = [2, 2];
-const end = [numRows - 3, numCols - 3];
+let numRows = 18;
+let numCols = 30;
+let displayHeight = 120;
+let start = [2, 2];
+let end = [numRows - 3, numCols - 3];
 let current_location = start;
 
 const Grid = () => {
   const [refreshCount, setRefreshCount] = useState(0);
   const [km, setKm] = useState<number>(0);
-  // const [algorithmRunning, setAlgorithmRunning] = useState<boolean>(false);
   const isAlgorithmRunningRef = useRef<boolean>(false);
-  const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
   const [isDragging, setIsDragging] = useState(false);
+
+  const [delayTime, setDelayTime] = useState(1);
+  const [numRandomized, setNumRandomized] = useState(50);
+  const [grid, setGrid] = useState<Cell[][]>(initializeGrid);
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
+  useEffect(() => {
+    numRows = Math.floor(window.innerHeight / 48);
+    numCols = Math.floor(window.innerWidth / 56);
+    displayHeight = numRows * 56;
+    start = [2, 2];
+    end = [numRows - 3, numCols - 3];
+    setGrid(initializeGrid());
+    priorityQueueRef.current = initializeQueue();
+    current_location = start;
+  }, []);
 
   function initializeQueue(): Heap<[[number, number], [number, number]]> {
     const newPriorityQueue = new Heap<[[number, number], [number, number]]>((a, b) => {
@@ -40,7 +52,6 @@ const Grid = () => {
   function initializeGrid(): Cell[][] {
     let initialGrid = Array.from({ length: numRows }, () =>
       Array.from({ length: numCols }, () => ({
-        distance: 27,
         isObstacle: false,
         isStart: false,
         isFinish: false,
@@ -52,7 +63,6 @@ const Grid = () => {
 
     initialGrid[start[0]][start[1]] = {
       ...initialGrid[start[0]][start[1]], 
-      distance: -1, 
       isStart: true, 
       g: Infinity,
       rhs: Infinity,
@@ -60,54 +70,50 @@ const Grid = () => {
 
     initialGrid[end[0]][end[1]] = {
       ...initialGrid[end[0]][end[1]], 
-      distance: 0, 
       isFinish: true,
       g: Infinity,
       rhs: 0, 
     };
 
+    start = [2, 2];
+    end = [numRows - 3, numCols - 3];
+    current_location = start;
+
     return initialGrid;
   };
+
+  useEffect(() => {
+    start = [2, 2];
+    end = [numRows - 3, numCols - 3];
+    setGrid(initializeGrid());
+    priorityQueueRef.current = initializeQueue();
+    current_location = start;
+  }, [numRows, numCols]);
 
   function calculateKey (rowIndex: number, colIndex: number) {
     const curr_cell: Cell = grid[rowIndex][colIndex];
     const min_g_rhs = Math.min(curr_cell.g, curr_cell.rhs);
-    const h = GridUtility.getManhattanDistance(rowIndex, colIndex, end[0], end[1]);
+    const h = GridUtility.getManhattanDistance(rowIndex, colIndex, current_location[0], current_location[1]);
     return [min_g_rhs + h + km, min_g_rhs];
   };
 
   async function UpdateVertex(rowIndex: number, colIndex: number) {
-    let cell = grid[rowIndex][colIndex];
-    // Calculate the minimum rhs value for all vertices except for the goal
-    if (!(rowIndex === end[0] && colIndex === end[1])) {
-      let minRhs = Infinity;
-      const successors = getSuccessors(rowIndex, colIndex);
-      successors.forEach(([succRow, succCol]) => {
-        const successor = grid[succRow][succCol];
-        minRhs = Math.min(minRhs, successor.g + 1); // Assuming the cost from cell to successor is 1
-      });
-      await updateGAndRhsValues(rowIndex, colIndex, cell.g, minRhs);
-      cell.isUnknown = false;
-    }
-    const cellKey = calculateKey(rowIndex, colIndex);
+    let u = grid[rowIndex][colIndex];
+    const u_key = calculateKey(rowIndex, colIndex);
     const isInQueue = priorityQueueRef.current.contains([[0, 0], [rowIndex, colIndex]], (element, needle) => {
       return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
     });
-    
 
-    // Update the vertex in the priority queue based on the D* Lite logic
-    if (cell.g !== cell.rhs) {
+    if (u.g !== u.rhs) {
       if (!isInQueue) {
-        // If the cell is not in the queue, insert it
-        priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
-        // console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
+        priorityQueueRef.current.push([[u_key[0], u_key[1]], [rowIndex, colIndex]]);
+        return;
       } else {
-        // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
-        updateKeyOfItemInPriorityQueue(cellKey, rowIndex, colIndex);
+        updateKeyOfItemInPriorityQueue(u_key, rowIndex, colIndex);
+        return;
       }
     } else {
       if (isInQueue) {
-        // If the cell's g and rhs are equal and it's in the queue, remove it from the queue
         priorityQueueRef.current.remove([[0, 0], [rowIndex, colIndex]], (element, needle) => {
           return element[1][0] === needle[1][0] && element[1][1] === needle[1][1];
         });
@@ -144,29 +150,42 @@ const Grid = () => {
       const topElement = priorityQueueRef.current.peek();
       if (!topElement) throw new Error('Priority queue is empty');
       const [[primaryKey, secondaryKey], [rowIndex, colIndex]] = topElement;
-      const cell = grid[rowIndex][colIndex];
+      const u = grid[rowIndex][colIndex];
       const kOld = [primaryKey, secondaryKey];
       const kNew = calculateKey(rowIndex, colIndex);
   
       if (kOld < kNew) {
         updateKeyOfItemInPriorityQueue(kNew, rowIndex, colIndex);
-      } else if (cell.g > cell.rhs) {
-        await updateGAndRhsValues(rowIndex, colIndex, cell.rhs, cell.rhs);
+      } else if (u.g > u.rhs) {
+        await updateGAndRhsValues(rowIndex, colIndex, u.rhs, u.rhs);
         priorityQueueRef.current.pop();
         const successors = getSuccessors(rowIndex, colIndex);
         for (const [x, y] of successors) {
+          const s_cell = grid[x][y];
+          if (x !== end[0] || y !== end[1]) {
+            const newRhs = Math.min(s_cell.rhs, u.g + 1);
+            await updateGAndRhsValues(x, y, s_cell.g, newRhs);
+          }
           await UpdateVertex(x, y);
         }
       } else {
-        await updateGAndRhsValues(rowIndex, colIndex, Infinity, cell.rhs);
-        const allNodes = getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]);
-        for (const [x, y] of allNodes) {
+        const g_old = u.g;
+        await updateGAndRhsValues(rowIndex, colIndex, Infinity, u.rhs);
+        const successors = getSuccessors(rowIndex, colIndex).concat([[rowIndex, colIndex]]);
+        for (const [x, y] of successors) {
+          const s_cell = grid[x][y];
+          if (s_cell.rhs === g_old + 1) {
+            if (x !== end[0] || y !== end[1]) {
+              const newRhs = Math.min(...getSuccessors(x, y).map(([x1, y1]) => grid[x1][y1].g + 1));
+              await updateGAndRhsValues(x, y, s_cell.g, newRhs);
+            }
+          }
           await UpdateVertex(x, y);
         }
       }
     }
   }
-  
+    
 
   function shouldContinueUpdating(): boolean {
     // console.log(isAlgorithmRunningRef.current.valueOf());
@@ -177,9 +196,6 @@ const Grid = () => {
     const topElementInQueue = priorityQueueRef.current.peek();
     if (!topElementInQueue) throw new Error('Priority queue is empty');
     const currCell = grid[current_location[0]][current_location[1]];
-    // console.log('topElementInQueue:',topElementInQueue[0][0], topElementInQueue[0][1], topElementInQueue[1][0], topElementInQueue[1][1]);
-    // console.log('rhs:',currCell.rhs, 'g:', currCell.g, 'currentKey:', currentKey[0])
-    // console.log('currentKey', currentKey[0], currentKey[1]);
     const shouldContinue: boolean = currCell.rhs > currCell.g || 
           topElementInQueue[0][0] < currentKey[0] ||
           (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]);
@@ -258,10 +274,12 @@ const Grid = () => {
   
   async function updateGAndRhsValues(rowIndex: number, colIndex: number, newG: number, newRhs: number) {
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-    grid[rowIndex][colIndex].g = newG;
-    grid[rowIndex][colIndex].rhs = newRhs;
+    const curr_cell = grid[rowIndex][colIndex];
+    curr_cell.g = newG;
+    curr_cell.rhs = newRhs;
+    curr_cell.isUnknown = false;
 
-    await delay(1);
+    await delay(delayTime);
     setRefreshCount(prev => prev + 1);
     // await delay(1);
     return;
@@ -321,7 +339,7 @@ const Grid = () => {
   const randomizeObstacles = () => {
     const selectedCells = new Set<string>();
   
-    while (selectedCells.size < 50) {
+    while (selectedCells.size < numRandomized) {
       const rowIndex = Math.floor(Math.random() * numRows);
       const colIndex = Math.floor(Math.random() * numCols);
   
@@ -439,14 +457,14 @@ const Grid = () => {
             </tr>
           </thead>
         </table>
-      <div className="scrollable-body">
+        <div className="scrollable-body" style={{maxHeight: `${displayHeight}px`}}>
         <table>
           <tbody>
             {queueItemsInOrder.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
               <tr key={index}>
-                <td style={{ textAlign: 'center' }}>{primaryKey}</td>
-                <td style={{ textAlign: 'center' }}>{secondaryKey}</td>
-                <td style={{ textAlign: 'center' }}>{rowNum}</td>
+              <td style={{ textAlign: 'center' }}>{primaryKey === Infinity ? '∞' : primaryKey}</td>
+              <td style={{ textAlign: 'center' }}>{secondaryKey === Infinity ? '∞' : secondaryKey}</td>
+              <td style={{ textAlign: 'center' }}>{rowNum}</td>
                 <td style={{ textAlign: 'center' }}>{colNum}</td>
               </tr>
             ))}
@@ -510,7 +528,7 @@ const Grid = () => {
       </button>
       <button onClick={handleComputeShortestPath} className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
-          ComputeShortestPath
+          Compute Path
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
@@ -532,7 +550,7 @@ const Grid = () => {
       </button>
       <button onClick={handleRandomizeObstacles} className="grid-button">
         <h2 className="mb-3 text-2xl font-semibold">
-          Randomize Obstacles
+          Randomize
           <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
             -&gt;
           </span>
@@ -542,7 +560,10 @@ const Grid = () => {
         </p>
       </button>
     </div>
-    <Legend />
+    <Legend
+        setDelayTime={setDelayTime}
+        setNumRandomized={setNumRandomized}
+      />
   </div>
   );
 };

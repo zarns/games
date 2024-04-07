@@ -5,7 +5,12 @@ import Box from '@mui/material/Box';
 import Slider from '@mui/material/Slider';
 import { Typography } from '@mui/material';
 
-const Legend = () => {
+interface LegendProps {
+  setDelayTime: React.Dispatch<React.SetStateAction<number>>;
+  setNumRandomized: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const Legend: React.FC<LegendProps> = ({ setDelayTime, setNumRandomized }) => {
   const staticLegendData = [
     { color: 'green', label: 'Current' },
     { color: 'red', label: 'Goal' },
@@ -66,20 +71,40 @@ const Legend = () => {
         </div> */}
 
         {/* Sliders section */}
-        <div className="sliders-section" style={{ flex: 1 }}>
+        {/* <div className="sliders-section" style={{ flex: 1 }}>
           <Box sx={{ width: 320 }}>
             <Typography gutterBottom>numRows</Typography>
-            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Slider aria-label="Default" valueLabelDisplay="auto" 
+              defaultValue={18}
+              min={3}
+              max={20}
+              onChange={(event, newValue) => setNumRows(newValue as number)}
+              />
             <Typography gutterBottom>numCols</Typography>
-            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Slider aria-label="Default" valueLabelDisplay="auto" 
+              defaultValue={30}
+              min={3}
+              max={50}
+              onChange={(event, newValue) => setNumCols(newValue as number)}
+              />          
           </Box>
-        </div>
+        </div> */}
         <div className="sliders-section" style={{ flex: 1 }}>
           <Box sx={{ width: 320 }}>
             <Typography gutterBottom>delayTime</Typography>
-            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Slider aria-label="Default" valueLabelDisplay="auto" 
+              defaultValue={1}
+              min={0}
+              max={500}
+              onChange={(event, newValue) => setDelayTime(newValue as number)}
+              />              
             <Typography gutterBottom>numRandomized</Typography>
-            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Slider aria-label="Default" valueLabelDisplay="auto" 
+              defaultValue={50}
+              min={5}
+              max={200}
+              onChange={(event, newValue) => setNumRandomized(newValue as number)}
+              />  
           </Box>
         </div>
 

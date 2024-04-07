@@ -2,7 +2,6 @@
 import * as d3 from 'd3';
 
 export type Cell = {
-  distance: number;
   isObstacle: boolean;
   isStart: boolean;
   isFinish: boolean;
