@@ -1,6 +1,9 @@
 // Legend.tsx
 import React from 'react';
 import { CellUtility } from './Types';
+import Box from '@mui/material/Box';
+import Slider from '@mui/material/Slider';
+import { Typography } from '@mui/material';
 
 const Legend = () => {
   const staticLegendData = [
@@ -11,8 +14,8 @@ const Legend = () => {
   ];
 
   const pathLegendData = Array.from({ length: 4 }, (_, i) => ({
-    color: CellUtility.colorScale(i * 3),
-    label: i === 0 ? 'Lower G Value' : i === 3 ? 'Higher G Value' : "",
+    color: CellUtility.colorScale(i * 9),
+    label: i === 0 ? 'Closer' : i === 3 ? 'Further' : "",
     invisibleLabel: i !== 0 && i !== 3 ? "G" : "",
   }));
 
@@ -38,19 +41,21 @@ const Legend = () => {
               </div>
             ))}
           </div>
-          <div className="path-legend">
-            {pathLegendData.map((item, index) => (
-              <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px', borderRadius: '50%' }}></div>
-                <span>{item.label}</span>
-                <span style={{ visibility: 'hidden' }}>{item.invisibleLabel}</span>
-              </div>
-            ))}
+          <div className="legend-section" style={{ display: 'flex', gap: '100px', flex: 1 }}>
+            <div className="path-legend">
+              {pathLegendData.map((item, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ width: '20px', height: '20px', backgroundColor: item.color, marginRight: '10px', borderRadius: '50%' }}></div>
+                  <span>{item.label}</span>
+                  <span style={{ visibility: 'hidden' }}>{item.invisibleLabel}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Instructions section */}
-        <div className="instructions-section" style={{ flex: 1 }}>
+        {/* Instructions section
+        <div className="instructions-section" style={{ flex: 1, justifyContent: 'flex-start' }}>
           <h3>Instructions:</h3>
           <ul>
             <li>Click or drag on the grid to add/remove obstacles.</li>
@@ -58,10 +63,28 @@ const Legend = () => {
             <li>Block a path and recompute to see the algorithm adapt.</li>
             <li>Click "Reinitialize" to clear the grid and start over.</li>
           </ul>
+        </div> */}
+
+        {/* Sliders section */}
+        <div className="sliders-section" style={{ flex: 1 }}>
+          <Box sx={{ width: 320 }}>
+            <Typography gutterBottom>numRows</Typography>
+            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Typography gutterBottom>numCols</Typography>
+            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+          </Box>
+        </div>
+        <div className="sliders-section" style={{ flex: 1 }}>
+          <Box sx={{ width: 320 }}>
+            <Typography gutterBottom>delayTime</Typography>
+            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+            <Typography gutterBottom>numRandomized</Typography>
+            <Slider defaultValue={50} aria-label="Default" valueLabelDisplay="auto" />
+          </Box>
         </div>
 
         {/* Links section */}
-        <div className="links-section" style={{ flex: 1, marginLeft: '50px' }}>
+        <div className="links-section" style={{ flex: 1 }}>
           <ul style={{ listStyleType: 'disc', paddingLeft: '20px' }}>
             <li><a href="https://cdn.aaai.org/AAAI/2002/AAAI02-072.pdf" target="_blank" rel="noopener noreferrer" style={{ color: '#3498db'}}>Original Paper</a></li>
             <li><a href="https://github.com/zarns" target="_blank" rel="noopener noreferrer" style={{ color: '#3498db'}}>Source Code</a></li>

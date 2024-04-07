@@ -23,11 +23,6 @@ const Grid = () => {
   const [isDragging, setIsDragging] = useState(false);
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
-  // var algorithmRunning = false;
-
-  // function setAlgorithmRunning(value: boolean) {
-  //   algorithmRunning = value;
-  // };
 
   function initializeQueue(): Heap<[[number, number], [number, number]]> {
     const newPriorityQueue = new Heap<[[number, number], [number, number]]>((a, b) => {

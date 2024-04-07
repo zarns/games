@@ -9,6 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.4",
+    "@emotion/styled": "^11.11.5",
+    "@mui/base": "^5.0.0-beta.40",
+    "@mui/material": "^5.15.15",
     "heap": "^0.2.7",
     "heap-js": "^2.3.0",
     "next": "14.0.4",
