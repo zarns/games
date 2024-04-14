@@ -28,7 +28,7 @@ const Grid = () => {
   useEffect(() => {
     numRows = Math.floor(window.innerHeight / 48);
     numCols = Math.floor(window.innerWidth / 56);
-    displayHeight = numRows * 56;
+    displayHeight = numRows * 60;
     start = [2, 2];
     end = [numRows - 3, numCols - 3];
     setGrid(initializeGrid());
@@ -91,9 +91,10 @@ const Grid = () => {
   }, [numRows, numCols]);
 
   function calculateKey (rowIndex: number, colIndex: number) {
-    const curr_cell: Cell = grid[rowIndex][colIndex];
-    const min_g_rhs = Math.min(curr_cell.g, curr_cell.rhs);
+    const s: Cell = grid[rowIndex][colIndex];
+    const min_g_rhs = Math.min(s.g, s.rhs);
     const h = GridUtility.getManhattanDistance(rowIndex, colIndex, current_location[0], current_location[1]);
+    // const h = getBFS(rowIndex, colIndex, current_location[0], current_location[1]);
     return [min_g_rhs + h + km, min_g_rhs];
   };
 
@@ -196,10 +197,10 @@ const Grid = () => {
     const topElementInQueue = priorityQueueRef.current.peek();
     if (!topElementInQueue) throw new Error('Priority queue is empty');
     const currCell = grid[current_location[0]][current_location[1]];
-    const shouldContinue: boolean = currCell.rhs > currCell.g || 
-          topElementInQueue[0][0] < currentKey[0] ||
-          (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]);
-    // console.log('shouldContinue:', shouldContinue);
+    let shouldContinue: boolean = false;
+    if (currCell.rhs !== currCell.g) shouldContinue = true;
+    if (topElementInQueue[0][0] < currentKey[0]) shouldContinue = true;
+    if (topElementInQueue[0][0] === currentKey[0] && topElementInQueue[0][1] < currentKey[1]) shouldContinue = true;
     return shouldContinue;
   }
 
@@ -285,6 +286,42 @@ const Grid = () => {
     return;
   }
 
+  // function getBFS(startRow: number, startCol: number, endRow: number, endCol: number): number {
+  //   let start = grid[startRow][startCol];
+  //   let end = grid[endRow][endCol];
+  
+  //   let queue = [[startRow, startCol]];
+  //   let cameFrom = new Map();
+  //   let distance = new Map();
+  //   distance.set(start, 0);
+  
+  //   while (queue.length > 0) {
+  //     let currentCell = queue.shift();
+  //     if (!currentCell) {
+  //       continue;
+  //     }
+  //     let [currentRow, currentCol] = currentCell;
+  //     let current = grid[currentRow][currentCol];
+  
+  //     if (current === end) {
+  //       // We have reached the end
+  //       return distance.get(current);
+  //     }
+  
+  //     let successors = getSuccessors(currentRow, currentCol);
+  //     for (let [neighborRow, neighborCol] of successors) {
+  //       let neighbor = grid[neighborRow][neighborCol];
+  //       if (!cameFrom.has(neighbor)) {
+  //         queue.push([neighborRow, neighborCol]);
+  //         cameFrom.set(neighbor, current);
+  //         distance.set(neighbor, distance.get(current) + 1);
+  //       }
+  //     }
+  //   }
+  
+  //   return Infinity;
+  // }
+
   const toggleObstacle = (rowIndex: number, colIndex: number) => {
     console.log("toggleObstacle")
     if (current_location[0] === rowIndex && current_location[1] === colIndex) return;
@@ -296,18 +333,27 @@ const Grid = () => {
     if (!cell.isObstacle) {
       // Making the cell an obstacle
       cell.isObstacle = true;
-      cell.g = Infinity;
-      cell.rhs = Infinity;
-      const successors = getSuccessors(rowIndex, colIndex);
-      successors.forEach(([x, y]) => placeOnPriorityQueueOrUpdate(x, y));
+      updateGAndRhsValues(rowIndex, colIndex, Infinity, Infinity);
     } else {
-      // Reverting the cell from being an obstacle (if needed in your application)
+      // Reverting the cell from being an obstacle
       cell.isObstacle = false;
       cell.isUnknown = true;
-      cell.g = Infinity;
-      cell.rhs = RHS_ValueAfterTogglingObstacle(rowIndex, colIndex);
+      updateGAndRhsValues(rowIndex, colIndex, Infinity, RHS_ValueAfterTogglingObstacle(rowIndex, colIndex));
+      UpdateVertex(rowIndex, colIndex);
     }
-    placeOnPriorityQueueOrUpdate(rowIndex, colIndex);
+    const successors = getSuccessors(rowIndex, colIndex);
+    successors.forEach(([x1, y1]) => {
+      if (x1 === end[0] && y1 === end[1]) return;
+      // placeOnPriorityQueueOrUpdate(x, y);
+      let newRhsForX1 = Infinity;
+      const secondarySuccessors = getSuccessors(x1, y1);
+      secondarySuccessors.forEach(([x2, y2]) => {
+        newRhsForX1 = Math.min(newRhsForX1, grid[x2][y2].g + 1);
+      });
+      updateGAndRhsValues(x1, y1, grid[x1][y1].g, newRhsForX1);
+      UpdateVertex(x1, y1);
+      console.log('updating successors');
+    });
     setRefreshCount(prev => prev + 1);
   };
 
@@ -318,7 +364,7 @@ const Grid = () => {
     });
     if (!isInQueue) {
       // If the cell is not in the queue, insert it
-      priorityQueueRef.current.push([[cellKey[0], cellKey[1]], [rowIndex, colIndex]]);
+      priorityQueueRef.current.push([[0, 0], [rowIndex, colIndex]]);
       // console.log('pushed', cellKey[0], cellKey[1], rowIndex, colIndex);
     } else {
       // If the cell is in the queue, update its key using updateKeyOfItemInPriorityQueue
@@ -328,10 +374,12 @@ const Grid = () => {
 
   function RHS_ValueAfterTogglingObstacle(rowIndex: number, colIndex: number): number {
     let minRHS = Infinity;
+    const cost = 1;
     getSuccessors(rowIndex, colIndex).forEach(([x, y]) => {
       const successor = grid[x][y];
-      const cost = 1;
-      minRHS = Math.min(minRHS, successor.g + cost);
+      if (successor.g + cost < minRHS) {
+        minRHS = successor.g + cost;
+      }
     });
     return minRHS;
   }
@@ -446,6 +494,7 @@ const Grid = () => {
   
     return (
       <div>
+        <div className="scrollable-body" style={{maxHeight: `${displayHeight}px`}}>
         <table>
           <thead>
             <tr>
@@ -456,9 +505,6 @@ const Grid = () => {
               <th></th>
             </tr>
           </thead>
-        </table>
-        <div className="scrollable-body" style={{maxHeight: `${displayHeight}px`}}>
-        <table>
           <tbody>
             {queueItemsInOrder.map(([[primaryKey, secondaryKey], [rowNum, colNum]], index) => (
               <tr key={index}>
