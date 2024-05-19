@@ -7,8 +7,8 @@ import './Pathfinder.css';
 import Legend from './Legend';
 import { Cell, CellUtility, GridUtility } from './Types';
 
-let numRows = 18;
-let numCols = 30;
+let numRows = 50;
+let numCols = 50;
 let displayHeight = 120;
 let start = [2, 2];
 let end = [numRows - 3, numCols - 3];
@@ -26,8 +26,8 @@ const Grid = () => {
   const priorityQueueRef = useRef<Heap<[[number, number], [number, number]]>>(initializeQueue());
 
   useEffect(() => {
-    numRows = Math.floor(window.innerHeight / 48);
-    numCols = Math.floor(window.innerWidth / 56);
+    numRows = Math.floor((window.innerHeight - 200) / 35);
+    numCols = Math.floor((window.innerWidth - 400) / 30);
     displayHeight = numRows * 60;
     start = [2, 2];
     end = [numRows - 3, numCols - 3];
